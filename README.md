@@ -3,7 +3,7 @@
 # Webrobotix Servo Controller Servo16_4 (Processing / Arduino)
 
 This Processing sketch provides a **16-channel RC servo controller interface** with sequence recording and Arduino sketch export.  
-It communicates with an Arduino running the **Servo18_sketch_PIR and optionally supports the **Adafruit 16-Channel 12-bit PWM/Servo Shield**.
+It communicates with an Arduino running **Servo_4.ino** and optionally supports the **Adafruit 16-Channel 12-bit PWM/Servo Shield**.
 
 **This software is provided for educational and experimental purposes only. The author assumes no responsibility for any damage or injury resulting from its use.**
 ---
@@ -39,7 +39,7 @@ Processing Libraries:
 
  **Setup**
 
-1. Upload the Arduino firmware (`Servo17_sketch`) to your Arduino.
+1. Upload the Arduino firmware (`Servo_4`) to your Arduino.
 2. Connect servos to your Arduino pins (or PWM shield channels).
 3. Open this sketch in Processing and run it.
 4. The program will auto-scan serial ports and connect to your Arduino.
