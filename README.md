@@ -29,7 +29,7 @@ It communicates with an Arduino running **Servo_4.ino** and optionally supports 
 
 - [Processing IDE](https://processing.org/) (tested with 4.4.0).
 - [Arduino IDE](https://www.arduino.cc/en/software).
-- Arduino board (Uno, Nano, etc.) running `Servo17_sketch` (no EEPROM version).
+- Arduino board (Uno, Nano, etc.) running `Servo_4.ino` (no EEPROM version).
 - (Optional) [Adafruit 16-Channel 12-bit PWM/Servo Shield](https://www.adafruit.com/product/1411).
 
 Processing Libraries:
@@ -39,7 +39,7 @@ Processing Libraries:
 
  **Setup**
 
-1. Upload the Arduino firmware (`Servo_4`) to your Arduino.
+1. Upload the Arduino firmware (`Servo_4.ino`) to your Arduino.
 2. Connect servos to your Arduino pins (or PWM shield channels).
 3. Open this sketch in Processing and run it.
 4. The program will auto-scan serial ports and connect to your Arduino.
