@@ -131,11 +131,12 @@ final int BLINK_ON_MAX = 150;    // ms - longest flash duration
 final int BLINK_PAUSE_MIN = 1500; // ms - shortest rest between blinks
 final int BLINK_PAUSE_MAX = 4000; // ms - longest rest between blinks
 int ledDataPin = 13;
+int ledDataPin2 = 12;
 Button ledBlinkButton;
 
 // Data pin editing (shared dialog for both PIR and LED pins)
 boolean isEditingPin = false;
-String editingPinTarget = "";  // "PIR" or "LED"
+String editingPinTarget = "";  // "PIR", "LED", or "LED2"
 String tempPinValue = "";
 
 // Interface elements
@@ -464,7 +465,7 @@ void drawLEDPanel() {
   // LED Blink Control Panel (placed beside the PIR panel)
   fill(230);
   stroke(150);
-  rect(1220, 600, 200, 140);
+  rect(1220, 600, 200, 160);
 
   fill(TEXT_COLOR);
   textAlign(LEFT, TOP);
@@ -476,7 +477,8 @@ void drawLEDPanel() {
 
   fill(0, 0, 200);
   textSize(12);
-  text("Data Pin: " + ledDataPin + "  (click to edit)", 1230, 653);
+  text("Pin 1: " + ledDataPin + "  (click to edit)", 1230, 653);
+  text("Pin 2: " + ledDataPin2 + "  (click to edit)", 1230, 671);
   fill(TEXT_COLOR);
 
   // Blink button flickers between two colors itself while active, for a quick visual cue
@@ -499,10 +501,12 @@ void setLEDBlink(boolean enable) {
     ledBlinkState = false;
     if (connected) {
       arduinoPort.write("LED:OFF\n");
+      arduinoPort.write("LED2:OFF\n");
     }
     nextBlinkToggleTime = millis() + int(random(BLINK_PAUSE_MIN, BLINK_PAUSE_MAX));
   } else if (connected) {
     arduinoPort.write("LED:OFF\n");
+    arduinoPort.write("LED2:OFF\n");
   }
 }
 
@@ -512,7 +516,10 @@ void updateLEDBlink() {
   if (millis() >= nextBlinkToggleTime) {
     ledBlinkState = !ledBlinkState;
     if (connected) {
-      arduinoPort.write(ledBlinkState ? "LED:ON\n" : "LED:OFF\n");
+      String cmd = ledBlinkState ? "LED:ON\n" : "LED:OFF\n";
+      String cmd2 = ledBlinkState ? "LED2:ON\n" : "LED2:OFF\n";
+      arduinoPort.write(cmd);
+      arduinoPort.write(cmd2);
     }
     // A quick flash when the LED just turned on, a longer rest once it's off again
     if (ledBlinkState) {
@@ -526,17 +533,33 @@ void updateLEDBlink() {
 void setLEDDataPin(int pin) {
   ledDataPin = pin;
   String warning = getPinWarning(pin);
-  sequenceStatus = warning.equals("") ? "LED data pin set to " + pin : "LED pin " + pin + " set - " + warning;
+  sequenceStatus = warning.equals("") ? "LED pin 1 set to " + pin : "LED pin 1 (" + pin + ") - " + warning;
   sequenceStatusTime = millis();
   if (connected) {
     arduinoPort.write("LED:PIN:" + pin + "\n");
   }
 }
 
+void setLEDDataPin2(int pin) {
+  ledDataPin2 = pin;
+  String warning = getPinWarning(pin);
+  sequenceStatus = warning.equals("") ? "LED pin 2 set to " + pin : "LED pin 2 (" + pin + ") - " + warning;
+  sequenceStatusTime = millis();
+  if (connected) {
+    arduinoPort.write("LED2:PIN:" + pin + "\n");
+  }
+}
+
 void startPinEdit(String target) {
   isEditingPin = true;
   editingPinTarget = target;
-  tempPinValue = target.equals("PIR") ? str(pirDataPin) : str(ledDataPin);
+  if (target.equals("PIR")) {
+    tempPinValue = str(pirDataPin);
+  } else if (target.equals("LED2")) {
+    tempPinValue = str(ledDataPin2);
+  } else {
+    tempPinValue = str(ledDataPin);
+  }
 }
 
 boolean isValidPinNumber(String s) {
@@ -704,6 +727,10 @@ void mousePressed() {
     startPinEdit("LED");
     return;
   }
+  if (mouseX >= 1230 && mouseX <= 1400 && mouseY >= 665 && mouseY <= 683) {
+    startPinEdit("LED2");
+    return;
+  }
 
   if (pwmShieldToggleButton.isOver()) {
     togglePWMShield();
@@ -846,6 +873,8 @@ void keyPressed() {
           setPIRDataPin(pin);
         } else if (editingPinTarget.equals("LED")) {
           setLEDDataPin(pin);
+        } else if (editingPinTarget.equals("LED2")) {
+          setLEDDataPin2(pin);
         }
         isEditingPin = false;
         editingPinTarget = "";
@@ -1161,7 +1190,8 @@ void exportArduinoSketch(String sketchName) {
   // LED configuration (LED is driven live over Serial by the controller app,
   // this pin definition just keeps the exported sketch and app in sync)
   sketchLines.add("// LED Configuration");
-  sketchLines.add("const int LED_PIN = " + ledDataPin + ";  // LED output pin (controlled live via Serial)");
+  sketchLines.add("const int LED_PIN = " + ledDataPin + ";  // LED 1 output pin (controlled live via Serial)");
+  sketchLines.add("const int LED2_PIN = " + ledDataPin2 + ";  // LED 2 output pin (controlled live via Serial)");
   sketchLines.add("");
 
   boolean[] usedServos = new boolean[NUM_SERVOS];
@@ -1275,8 +1305,9 @@ void exportArduinoSketch(String sketchName) {
   sketchLines.add("");
 
   // LED setup
-  sketchLines.add("  // Initialize LED pin");
+  sketchLines.add("  // Initialize LED pins");
   sketchLines.add("  pinMode(LED_PIN, OUTPUT);");
+  sketchLines.add("  pinMode(LED2_PIN, OUTPUT);");
   sketchLines.add("");
 
   if (usePWMShield) {
@@ -2061,7 +2092,7 @@ void createUI() {
   pirCooldownSlider = new Slider(990, 670, 200, 20, 1000, 30000);
   pirCooldownSlider.setValue(5000);
 
-  ledBlinkButton = new Button(1260, 670, 120, 40, "Blink", LED_BUTTON_COLOR);
+  ledBlinkButton = new Button(1260, 692, 120, 40, "Blink", LED_BUTTON_COLOR);
 }
 
 void drawServoControl(int servoNum) {
@@ -2177,9 +2208,20 @@ void drawPinEditDialog() {
   fill(0);
   textAlign(CENTER, CENTER);
   textSize(16);
-  int currentPin = editingPinTarget.equals("PIR") ? pirDataPin : ledDataPin;
+  int currentPin;
+  String friendlyName;
+  if (editingPinTarget.equals("PIR")) {
+    currentPin = pirDataPin;
+    friendlyName = "PIR";
+  } else if (editingPinTarget.equals("LED2")) {
+    currentPin = ledDataPin2;
+    friendlyName = "LED 2";
+  } else {
+    currentPin = ledDataPin;
+    friendlyName = "LED 1";
+  }
   int top = height/2 - (dialogHeight/2);
-  text("Edit " + editingPinTarget + " Data Pin", width/2, top + 40);
+  text("Edit " + friendlyName + " Data Pin", width/2, top + 40);
   text("Current: " + currentPin, width/2, top + 60);
   text("New: " + tempPinValue + "_", width/2, top + 90);
 
