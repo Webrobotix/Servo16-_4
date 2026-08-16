@@ -1,4 +1,4 @@
-# Servo16_4  (added LEDs for eyes)
+# Servo16_4  (added LEDs for version 1 skull)
 
 # Webrobotix Servo Controller Servo16_4 (Processing / Arduino)
 
