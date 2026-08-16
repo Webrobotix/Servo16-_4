@@ -22,12 +22,12 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
  * Webrobotix 16-Channel RC Servo Controller with PIR Motion Detection
- * Version 1.7.0 - PIR + LED Integration (matches Servo16_4_PIR.pde)
+ * Version 1.8.0 - PIR + Dual LED Integration (matches Servo16_4.pde)
  * Using Adafruit 16-channel 12-bit servo shield
  * Communicates with Processing for UI control
  * PIR sensor integration for motion-triggered sequences
- * LED digital on/off control (for the app's blink feature)
- * PIR and LED data pins are configurable at runtime via serial commands
+ * Two independently-pinned LEDs, digital on/off control (blink timing lives in the app)
+ * PIR and both LED data pins are configurable at runtime via serial commands
  */
 
 #include <Wire.h>
@@ -52,8 +52,10 @@ unsigned long pirCooldownPeriod = 5000;  // 5 seconds cooldown between triggers
 bool pirSequencePlaying = false;
 
 // LED Configuration (digital on/off - blink timing is handled by the app)
-int ledPin = 13;  // Digital pin for LED (change via LED:PIN:x command)
+int ledPin = 13;  // Digital pin for LED 1 (change via LED:PIN:x command)
 bool ledState = false;
+int led2Pin = 12;  // Digital pin for LED 2 (change via LED2:PIN:x command)
+bool led2State = false;
 
 // Servo positions (0-180 degrees)
 int servoPositions[NUM_SERVOS];
@@ -82,9 +84,11 @@ void setup() {
   // Initialize PIR sensor pin
   pinMode(pirPin, INPUT);
 
-  // Initialize LED pin
+  // Initialize LED pins
   pinMode(ledPin, OUTPUT);
   digitalWrite(ledPin, LOW);
+  pinMode(led2Pin, OUTPUT);
+  digitalWrite(led2Pin, LOW);
 
   // Initialize with default values
   initializeDefaults();
@@ -95,8 +99,10 @@ void setup() {
   Serial.println("Servo Controller with PIR Ready");
   Serial.print("PIR Sensor on Pin: ");
   Serial.println(pirPin);
-  Serial.print("LED on Pin: ");
+  Serial.print("LED 1 on Pin: ");
   Serial.println(ledPin);
+  Serial.print("LED 2 on Pin: ");
+  Serial.println(led2Pin);
   
   // Send all current data to Processing on startup
   delay(1000);
@@ -334,7 +340,7 @@ void processCommand() {
     }
   }
   else if (inputString.startsWith("LED:")) {
-    // LED control commands
+    // LED 1 control commands
     if (inputString.equals("LED:ON")) {
       ledState = true;
       digitalWrite(ledPin, HIGH);
@@ -344,7 +350,7 @@ void processCommand() {
       digitalWrite(ledPin, LOW);
     }
     else if (inputString.startsWith("LED:PIN:")) {
-      // Set LED data pin: LED:PIN:pinNumber
+      // Set LED 1 data pin: LED:PIN:pinNumber
       int newPin = inputString.substring(8).toInt();
       if (newPin >= 0 && newPin <= 53) {
         digitalWrite(ledPin, LOW);  // leave the old pin in a known state
@@ -353,6 +359,29 @@ void processCommand() {
         digitalWrite(ledPin, ledState ? HIGH : LOW);
         Serial.print("LED:PIN:");
         Serial.println(ledPin);
+      }
+    }
+  }
+  else if (inputString.startsWith("LED2:")) {
+    // LED 2 control commands
+    if (inputString.equals("LED2:ON")) {
+      led2State = true;
+      digitalWrite(led2Pin, HIGH);
+    }
+    else if (inputString.equals("LED2:OFF")) {
+      led2State = false;
+      digitalWrite(led2Pin, LOW);
+    }
+    else if (inputString.startsWith("LED2:PIN:")) {
+      // Set LED 2 data pin: LED2:PIN:pinNumber
+      int newPin = inputString.substring(9).toInt();
+      if (newPin >= 0 && newPin <= 53) {
+        digitalWrite(led2Pin, LOW);  // leave the old pin in a known state
+        led2Pin = newPin;
+        pinMode(led2Pin, OUTPUT);
+        digitalWrite(led2Pin, led2State ? HIGH : LOW);
+        Serial.print("LED2:PIN:");
+        Serial.println(led2Pin);
       }
     }
   }
@@ -406,6 +435,8 @@ void sendAllData() {
   // Send LED status
   Serial.print("LED:PIN:");
   Serial.println(ledPin);
+  Serial.print("LED2:PIN:");
+  Serial.println(led2Pin);
 }
 
 // Serial event handler
